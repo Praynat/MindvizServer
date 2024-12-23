@@ -18,8 +18,8 @@ namespace MindvizServer.Core.Models
         public string? Description { get; set; }
 
         // Organisation
-        public List<int> ParentIds { get; set; } = new List<int>();
-        public List<int> ChildrenIds { get; set; } = new List<int>();
+        public List<string> ParentIds { get; set; } = new List<string>();
+        public List<string> ChildrenIds { get; set; } = new List<string>();
 
         public TaskType Type { get; set; } = TaskType.Simple; //Simple or Complex or Category
 
@@ -34,14 +34,14 @@ namespace MindvizServer.Core.Models
 
         // Attributs Temporels
         public bool IsDeadline { get; set; }=false;
-        public DateTime? Deadline { get; set; } = DateTime.Now;
+        public DateTime? Deadline { get; set; } 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
 
         // Attributs de Fréquence
         public bool IsFrequency { get; set; } = false;
         public FrequencyType Frequency { get; set; } = FrequencyType.OneTime; // OneTime, Daily, Weekly, Monthly, Yearly, Custom
-        public DateTime? StartDate { get; set; }=DateTime.Now;
+        public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public List<DateTime> NextOccurrences { get; set; } = new List<DateTime>();
         public WeekDays WeekDays { get; set; } = WeekDays.None; //separate different weekdays with |
@@ -52,7 +52,6 @@ namespace MindvizServer.Core.Models
         public int? FrequencyInterval { get; set; } // Interval for custom frequencies (e.g., every 3 months)
 
         // Relations et Contexte
-        public string? AssignedTo { get; set; }
         public List<string> Links { get; set; } = new List<string>();
         public List<string> Tags { get; set; } = new List<string>();
 

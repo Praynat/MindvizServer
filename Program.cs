@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
+using MindvizServer.Core.Database;
 
 namespace MindvizServer
 {
@@ -103,7 +104,15 @@ namespace MindvizServer
             // Build the application
             var app = builder.Build();
 
-            // Part 8: Middleware pipeline configuration
+            //Part 8: Run the seeding logic
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<MindvizDbContext>();
+
+                DatabaseSeeder.SeedData(context);
+            }
+
+            // Part 9: Middleware pipeline configuration
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger(); // Enable Swagger in development mode

@@ -75,7 +75,6 @@ namespace MindvizServer.Infrastructure.Services
                 taskToUpdate.DayOfMonth = updatedTask.DayOfMonth;
                 taskToUpdate.MonthOfYear = updatedTask.MonthOfYear;
                 taskToUpdate.FrequencyInterval = updatedTask.FrequencyInterval;
-                taskToUpdate.AssignedTo = updatedTask.AssignedTo;
                 taskToUpdate.Links = updatedTask.Links;
                 taskToUpdate.Tags = updatedTask.Tags;
                 taskToUpdate.UserTasks = updatedTask.UserTasks;
