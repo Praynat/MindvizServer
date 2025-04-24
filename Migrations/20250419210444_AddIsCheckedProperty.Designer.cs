@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MindvizServer.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using MindvizServer.Infrastructure.Data;
 namespace MindvizServer.Migrations
 {
     [DbContext(typeof(MindvizDbContext))]
-    partial class MindvizDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250419210444_AddIsCheckedProperty")]
+    partial class AddIsCheckedProperty
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,89 +24,6 @@ namespace MindvizServer.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("MindvizServer.Core.Models.Group", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)")
-                        .HasAnnotation("Relational:JsonPropertyName", "_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatorId")
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "creator_id");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Groups");
-                });
-
-            modelBuilder.Entity("MindvizServer.Core.Models.GroupMember", b =>
-                {
-                    b.Property<string>("GroupId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("InvitedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("GroupId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("GroupMembers");
-                });
-
-            modelBuilder.Entity("MindvizServer.Core.Models.GroupTask", b =>
-                {
-                    b.Property<string>("GroupId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("TaskId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("AssignedUserIds")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("GroupId", "TaskId");
-
-                    b.HasIndex("TaskId");
-
-                    b.ToTable("GroupTasks");
-                });
 
             modelBuilder.Entity("MindvizServer.Core.Models.TaskModel", b =>
                 {
@@ -244,44 +164,6 @@ namespace MindvizServer.Migrations
                     b.ToTable("UserTasks");
                 });
 
-            modelBuilder.Entity("MindvizServer.Core.Models.GroupMember", b =>
-                {
-                    b.HasOne("MindvizServer.Core.Models.Group", "Group")
-                        .WithMany("Members")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MindvizServer.Core.Models.User", "User")
-                        .WithMany("GroupMemberships")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Group");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("MindvizServer.Core.Models.GroupTask", b =>
-                {
-                    b.HasOne("MindvizServer.Core.Models.Group", "Group")
-                        .WithMany("Tasks")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MindvizServer.Core.Models.TaskModel", "Task")
-                        .WithMany("GroupTasks")
-                        .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Group");
-
-                    b.Navigation("Task");
-                });
-
             modelBuilder.Entity("MindvizServer.Core.Models.TaskModel", b =>
                 {
                     b.HasOne("MindvizServer.Core.Models.User", null)
@@ -399,24 +281,13 @@ namespace MindvizServer.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MindvizServer.Core.Models.Group", b =>
-                {
-                    b.Navigation("Members");
-
-                    b.Navigation("Tasks");
-                });
-
             modelBuilder.Entity("MindvizServer.Core.Models.TaskModel", b =>
                 {
-                    b.Navigation("GroupTasks");
-
                     b.Navigation("UserTasks");
                 });
 
             modelBuilder.Entity("MindvizServer.Core.Models.User", b =>
                 {
-                    b.Navigation("GroupMemberships");
-
                     b.Navigation("Tasks");
 
                     b.Navigation("UserTasks");

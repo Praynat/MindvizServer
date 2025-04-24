@@ -40,6 +40,7 @@ namespace MindvizServer.Presentation.Controllers
         }
 
 
+
         // Admin only: Fetch tasks for a specific user
         [Authorize(Roles = "Admin")]
         [HttpGet("user-tasks/{userId}")]
@@ -97,10 +98,24 @@ namespace MindvizServer.Presentation.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Unexpected error in CreateTaskAsync: {ex.Message}");
+
+                // Log the inner exception details, if present
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                    if (ex.InnerException.InnerException != null)
+                    {
+                        Console.WriteLine($"Deeper Inner Exception: {ex.InnerException.InnerException.Message}");
+                    }
+                }
+
+                // Optionally log the stack trace for debugging
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while creating the task.");
             }
-
         }
+
 
 
         [Authorize(Policy = "Must be logged")]

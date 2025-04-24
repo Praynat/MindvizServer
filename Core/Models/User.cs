@@ -23,5 +23,9 @@ namespace MindvizServer.Core.Models
 
         [JsonIgnore]
         public List<UserTask> UserTasks { get; set; } = new List<UserTask>();
+
+        [JsonIgnore]
+        public List<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>();
+
     }
 }

@@ -50,7 +50,59 @@ namespace MindvizServer.Application.Services
             try
             {
                 task.UserId = userIdClaim;
-                return await _taskRepository.CreateTaskAsync(task);
+                task.Id = task.Id ?? Guid.NewGuid().ToString(); // Generate ID if not provided
+                task.ParentIds ??= new List<string>();
+                task.ChildrenIds ??= new List<string>();
+                task.Tags ??= new List<string>();
+                task.Links ??= new List<string>();
+                task.NextOccurrences ??= new List<DateTime>();
+                task.UserTasks ??= new List<UserTask>();
+                task.CreatedAt = DateTime.Now;
+                if (task.Weight <= 0)
+                {
+                    task.Weight = 1.0;
+                }
+                // Create the task
+                var createdTask = await _taskRepository.CreateTaskAsync(task);
+
+                // If this task has parent tasks, update their progress
+                if (createdTask != null && createdTask.ParentIds.Count > 0)
+                {
+                    foreach (var parentId in createdTask.ParentIds)
+                    {
+                        var parentTask = await _taskRepository.GetTaskByIdAsync(parentId);
+                        if (parentTask != null && !parentTask.IsChecked)
+                        {
+                            // Add this task to the parent's children if not already there
+                            if (!parentTask.ChildrenIds.Contains(createdTask.Id))
+                            {
+                                parentTask.ChildrenIds.Add(createdTask.Id);
+                            }
+
+                            // Calculate the parent's progress based on all its children
+                            double totalWeightedProgress = 0;
+                            double totalWeight = 0;
+
+                            foreach (var childId in parentTask.ChildrenIds)
+                            {
+                                var childTask = await _taskRepository.GetTaskByIdAsync(childId);
+                                if (childTask != null)
+                                {
+                                    totalWeightedProgress += childTask.Progress * childTask.Weight;
+                                    totalWeight += childTask.Weight;
+                                }
+                            }
+
+                            if (totalWeight > 0)
+                            {
+                                parentTask.Progress = (int)(totalWeightedProgress / totalWeight);
+                                await _taskRepository.UpdateTaskAsync(parentId, parentTask);
+                            }
+                        }
+                    }
+                }
+
+                return createdTask;
             }
             catch (Exception ex)
             {
@@ -105,14 +157,96 @@ namespace MindvizServer.Application.Services
         {
             try
             {
-                var task = await GetTaskByIdAsync(id, userId, isAdmin);
-                if (task == null)
+                var existingTask = await GetTaskByIdAsync(id, userId, isAdmin);
+                if (existingTask == null)
                 {
                     return null;
                 }
 
-                updatedTask.UserId = task.UserId; 
-                return await _taskRepository.UpdateTaskAsync(id, updatedTask);
+                updatedTask.UserId = existingTask.UserId;
+
+                // Check if the task is being unchecked (was previously checked but now is not)
+                bool isBeingUnchecked = existingTask.IsChecked && !updatedTask.IsChecked;
+
+                // If the task is checked, set progress to 100%
+                if (updatedTask.IsChecked)
+                {
+                    updatedTask.Progress = 100;
+                }
+                // If the task is being explicitly unchecked, reset progress to 0 regardless of children
+                else if (isBeingUnchecked)
+                {
+                    updatedTask.Progress = 0;
+                    Console.WriteLine($"Task '{updatedTask.Name}' was unchecked, resetting progress to 0");
+                }
+                // If it has children and is not checked, calculate progress as weighted average of children
+                else if (updatedTask.ChildrenIds.Count > 0)
+                {
+                    double totalWeightedProgress = 0;
+                    double totalWeight = 0;
+
+                    foreach (var childId in updatedTask.ChildrenIds)
+                    {
+                        var childTask = await _taskRepository.GetTaskByIdAsync(childId);
+                        if (childTask != null)
+                        {
+                            totalWeightedProgress += childTask.Progress * childTask.Weight;
+                            totalWeight += childTask.Weight;
+                        }
+                    }
+
+                    // Only update the progress if we found valid children
+                    if (totalWeight > 0)
+                    {
+                        updatedTask.Progress = (int)(totalWeightedProgress / totalWeight);
+                    }
+                    else
+                    {
+                        // If no valid children found, set to 0
+                        updatedTask.Progress = 0;
+                    }
+                }
+                // If the task has no children and is not checked, progress is 0
+                else
+                {
+                    updatedTask.Progress = 0;
+                }
+
+                // Update the task
+                var result = await _taskRepository.UpdateTaskAsync(id, updatedTask);
+
+                // Now update progress of any parent tasks that include this task
+                if (result != null && updatedTask.ParentIds.Count > 0)
+                {
+                    foreach (var parentId in updatedTask.ParentIds)
+                    {
+                        var parentTask = await _taskRepository.GetTaskByIdAsync(parentId);
+                        if (parentTask != null && !parentTask.IsChecked)
+                        {
+                            // Calculate the parent's progress based on all its children
+                            double totalWeightedProgress = 0;
+                            double totalWeight = 0;
+
+                            foreach (var childId in parentTask.ChildrenIds)
+                            {
+                                var childTask = await _taskRepository.GetTaskByIdAsync(childId);
+                                if (childTask != null)
+                                {
+                                    totalWeightedProgress += childTask.Progress * childTask.Weight;
+                                    totalWeight += childTask.Weight;
+                                }
+                            }
+
+                            if (totalWeight > 0)
+                            {
+                                parentTask.Progress = (int)(totalWeightedProgress / totalWeight);
+                                await _taskRepository.UpdateTaskAsync(parentId, parentTask);
+                            }
+                        }
+                    }
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -120,6 +254,7 @@ namespace MindvizServer.Application.Services
                 throw;
             }
         }
+
 
 
 
@@ -133,7 +268,57 @@ namespace MindvizServer.Application.Services
                     return null;
                 }
 
-                return await _taskRepository.DeleteTaskAsync(id);
+                // Store parent IDs before deleting the task
+                var parentIds = new List<string>(task.ParentIds);
+
+                // Delete the task
+                var deletedTask = await _taskRepository.DeleteTaskAsync(id);
+
+                if (deletedTask != null && parentIds.Count > 0)
+                {
+                    // Update progress of each parent task after removing this child
+                    foreach (var parentId in parentIds)
+                    {
+                        var parentTask = await _taskRepository.GetTaskByIdAsync(parentId);
+                        if (parentTask != null && !parentTask.IsChecked)
+                        {
+                            // Remove this task from parent's children if needed
+                            if (parentTask.ChildrenIds.Contains(id))
+                            {
+                                parentTask.ChildrenIds.Remove(id);
+                            }
+
+                            // Recalculate parent's progress based on remaining children
+                            double totalWeightedProgress = 0;
+                            double totalWeight = 0;
+
+                            foreach (var childId in parentTask.ChildrenIds)
+                            {
+                                var childTask = await _taskRepository.GetTaskByIdAsync(childId);
+                                if (childTask != null)
+                                {
+                                    totalWeightedProgress += childTask.Progress * childTask.Weight;
+                                    totalWeight += childTask.Weight;
+                                }
+                            }
+
+                            // Update parent's progress
+                            if (totalWeight > 0)
+                            {
+                                parentTask.Progress = (int)(totalWeightedProgress / totalWeight);
+                            }
+                            else
+                            {
+                                // If no children left, progress is 0 (unless manually checked)
+                                parentTask.Progress = parentTask.IsChecked ? 100 : 0;
+                            }
+
+                            await _taskRepository.UpdateTaskAsync(parentId, parentTask);
+                        }
+                    }
+                }
+
+                return deletedTask;
             }
             catch (Exception ex)
             {

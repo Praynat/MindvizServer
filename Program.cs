@@ -30,6 +30,7 @@ namespace MindvizServer
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
                 }); ;
 
 
@@ -42,6 +43,7 @@ namespace MindvizServer
             builder.Services.AddDbContext<MindvizDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
+           
 
 
             // Part 3: Dependency Injection for services
@@ -50,6 +52,10 @@ namespace MindvizServer
             builder.Services.AddScoped<IUserService, UserService>(); // Scoped user service
             builder.Services.AddScoped<ITaskRepository, TaskRepository>(); // Scoped card repository
             builder.Services.AddScoped<ITaskService, TaskService>(); // Scoped card service
+             // Register Group-related services
+            builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+            builder.Services.AddScoped<IGroupService, GroupService>();
+
 
             // Part 4: Authentication setup
             var jwtKey = Environment.GetEnvironmentVariable("JwtSecretKey");
@@ -100,17 +106,11 @@ namespace MindvizServer
             // Part 7: API Explorer and Swagger (API documentation) setup
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddHostedService<TaskDataMigration>();
 
             // Build the application
             var app = builder.Build();
 
-            //Part 8: Run the seeding logic
-            using (var scope = app.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<MindvizDbContext>();
-
-                DatabaseSeeder.SeedData(context);
-            }
 
             // Part 9: Middleware pipeline configuration
             if (app.Environment.IsDevelopment())

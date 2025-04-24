@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MindvizServer.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using MindvizServer.Infrastructure.Data;
 namespace MindvizServer.Migrations
 {
     [DbContext(typeof(MindvizDbContext))]
-    partial class MindvizDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250424121459_UpdateTaskModel")]
+    partial class UpdateTaskModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -8,7 +8,7 @@ namespace MindvizServer.Core.Models
     {
         // Identification
         [JsonPropertyName("_id")]
-        public string Id { get; set; }= Guid.NewGuid().ToString();
+        public string? Id { get; set; } 
 
         [Required(ErrorMessage = "Task name is required.")]
         [StringLength(100, ErrorMessage = "Task name cannot exceed 100 characters.")]
@@ -27,14 +27,15 @@ namespace MindvizServer.Core.Models
         [Range(0, 100, ErrorMessage = "Progress must be between 0 and 100.")]
         public int Progress { get; set; } = 0;
 
+        // New property to track if a task is explicitly checked as completed
+        public bool IsChecked { get; set; } = false;
 
         [Range(0, double.MaxValue, ErrorMessage = "Weight cannot be negative.")]
         public double Weight { get; set; } = 1;
 
-
         // Attributs Temporels
-        public bool IsDeadline { get; set; }=false;
-        public DateTime? Deadline { get; set; } 
+        public bool IsDeadline { get; set; } = false;
+        public DateTime? Deadline { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
 
@@ -59,5 +60,8 @@ namespace MindvizServer.Core.Models
 
         [JsonPropertyName("user_id")]
         public string? UserId { get; set; }
+
+        [JsonIgnore]
+        public List<GroupTask> GroupTasks { get; set; } = new List<GroupTask>();
     }
 }

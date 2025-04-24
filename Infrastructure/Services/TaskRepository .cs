@@ -26,9 +26,27 @@ namespace MindvizServer.Infrastructure.Services
 
         public async Task<TaskModel?> CreateTaskAsync(TaskModel task)
         {
-            _context.Tasks.Add(task);
-            await _context.SaveChangesAsync();
-            return task;
+            // Begin a transaction to ensure all updates are consistent
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Add the new task
+                _context.Tasks.Add(task);
+                await _context.SaveChangesAsync();
+
+                // Commit the transaction
+                await transaction.CommitAsync();
+
+                return task;
+            }
+            catch (Exception ex)
+            {
+                // If any error occurs, roll back the transaction
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Error in CreateTaskAsync: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<TaskModel?> GetTaskByIdAsync(string id)
@@ -48,42 +66,56 @@ namespace MindvizServer.Infrastructure.Services
 
         public async Task<TaskModel?> UpdateTaskAsync(string id, TaskModel updatedTask)
         {
-           
-                var taskToUpdate = await _context.Tasks.FindAsync(id);
-                if (taskToUpdate == null)
-                {
-                    return null; // Task not found
-                }
+            var taskToUpdate = await _context.Tasks.FindAsync(id);
+            if (taskToUpdate == null)
+            {
+                return null; // Task not found
+            }
 
-                // Update properties
-                taskToUpdate.Name = updatedTask.Name;
-                taskToUpdate.Description = updatedTask.Description;
-                taskToUpdate.ParentIds = updatedTask.ParentIds;
-                taskToUpdate.ChildrenIds = updatedTask.ChildrenIds;
-                taskToUpdate.Type = updatedTask.Type;
+            // Update properties
+            taskToUpdate.Name = updatedTask.Name;
+            taskToUpdate.Description = updatedTask.Description;
+            taskToUpdate.ParentIds = updatedTask.ParentIds;
+            taskToUpdate.ChildrenIds = updatedTask.ChildrenIds;
+            taskToUpdate.Type = updatedTask.Type;
+            taskToUpdate.IsChecked = updatedTask.IsChecked;
+
+            // Update progress based on checked state or subtasks
+            if (taskToUpdate.IsChecked)
+            {
+                taskToUpdate.Progress = 100;
+            }
+            else if (taskToUpdate.ChildrenIds.Count > 0)
+            {
+                // The progress will be calculated in the task service
                 taskToUpdate.Progress = updatedTask.Progress;
-                taskToUpdate.Weight = updatedTask.Weight;
-                taskToUpdate.IsDeadline = updatedTask.IsDeadline;
-                taskToUpdate.Deadline = updatedTask.Deadline;
-                taskToUpdate.UpdatedAt = DateTime.Now; // Update timestamp
-                taskToUpdate.IsFrequency = updatedTask.IsFrequency;
-                taskToUpdate.Frequency = updatedTask.Frequency;
-                taskToUpdate.StartDate = updatedTask.StartDate;
-                taskToUpdate.EndDate = updatedTask.EndDate;
-                taskToUpdate.NextOccurrences = updatedTask.NextOccurrences;
-                taskToUpdate.WeekDays = updatedTask.WeekDays;
-                taskToUpdate.DayOfMonth = updatedTask.DayOfMonth;
-                taskToUpdate.MonthOfYear = updatedTask.MonthOfYear;
-                taskToUpdate.FrequencyInterval = updatedTask.FrequencyInterval;
-                taskToUpdate.Links = updatedTask.Links;
-                taskToUpdate.Tags = updatedTask.Tags;
-                taskToUpdate.UserTasks = updatedTask.UserTasks;
-                taskToUpdate.UserId = updatedTask.UserId;
+            }
+            else
+            {
+                taskToUpdate.Progress = 0;
+            }
 
-                // Save changes to the database
-                await _context.SaveChangesAsync();
-                return taskToUpdate;
-            
+            taskToUpdate.Weight = updatedTask.Weight;
+            taskToUpdate.IsDeadline = updatedTask.IsDeadline;
+            taskToUpdate.Deadline = updatedTask.Deadline;
+            taskToUpdate.UpdatedAt = DateTime.Now; // Update timestamp
+            taskToUpdate.IsFrequency = updatedTask.IsFrequency;
+            taskToUpdate.Frequency = updatedTask.Frequency;
+            taskToUpdate.StartDate = updatedTask.StartDate;
+            taskToUpdate.EndDate = updatedTask.EndDate;
+            taskToUpdate.NextOccurrences = updatedTask.NextOccurrences;
+            taskToUpdate.WeekDays = updatedTask.WeekDays;
+            taskToUpdate.DayOfMonth = updatedTask.DayOfMonth;
+            taskToUpdate.MonthOfYear = updatedTask.MonthOfYear;
+            taskToUpdate.FrequencyInterval = updatedTask.FrequencyInterval;
+            taskToUpdate.Links = updatedTask.Links;
+            taskToUpdate.Tags = updatedTask.Tags;
+            taskToUpdate.UserTasks = updatedTask.UserTasks;
+            taskToUpdate.UserId = updatedTask.UserId;
+
+            // Save changes to the database
+            await _context.SaveChangesAsync();
+            return taskToUpdate;
         }
 
 
