@@ -6,20 +6,6 @@ MindViz is a modern task management system that helps organize hierarchical task
 
 ---
 
-## 📚 Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Data Model](#data-model)
-- [Getting Started](#getting-started)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Frontend Integration](#frontend-integration)
-- [Architecture](#architecture)
-- [License](#license)
-
----
 
 ## 🌟 Overview
 
