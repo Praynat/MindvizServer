@@ -68,8 +68,8 @@ The system is built on **.NET 8** using a **clean architecture** approach with s
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/MindVizBackend.git
-   cd MindVizBackend
+   git clone https:https://github.com/Praynat/MindvizServer
+   cd MindVizServer
    ```
 
 2. Restore dependencies:
