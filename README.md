@@ -1,6 +1,3 @@
-This backend README is **very good** structurally. Clear, detailed, professional.  
-Now I'll **rewrite it cleanly** with proper Markdown formatting (titles, code blocks, bullets) so it looks great when displayed on GitHub or in any Markdown viewer:
-
 ---
 
 # MindViz Server – Visual Task Management Server
