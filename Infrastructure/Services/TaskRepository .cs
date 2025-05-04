@@ -127,8 +127,12 @@ namespace MindvizServer.Infrastructure.Services
                 {
                     return null; // User not found
                 }
-
-                _context.Tasks.Remove(task);
+            if (task.IsRoot)
+            {
+                Console.WriteLine($"Cannot delete task {id} because it is marked as a root task.");
+                throw new InvalidOperationException("Root tasks cannot be deleted.");
+            }
+            _context.Tasks.Remove(task);
                 await _context.SaveChangesAsync();
                 return task;
             

@@ -16,8 +16,10 @@ namespace MindvizServer.Application.Interfaces
         Task<bool> AddMemberByEmailAsync(string groupId, string email, bool isAdmin, string invitedByUserId);
         Task<bool> RemoveMemberAsync(string groupId, string userId, string requestingUserId);
         Task<bool> SetMemberAdminStatusAsync(string groupId, string userId, bool isAdmin, string requestingUserId);
-        
+
         // Task management
+        Task<List<TaskModel>> GetGroupTasksAsync(string groupId, string userId);
+
         Task<bool> AddTaskToGroupAsync(string groupId, string taskId, string userId);
         Task<bool> RemoveTaskFromGroupAsync(string groupId, string taskId, string userId);
         Task<bool> AssignTaskToMemberAsync(string groupId, string taskId, string memberId, string requestingUserId);

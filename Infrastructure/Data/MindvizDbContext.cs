@@ -1,5 +1,6 @@
 ﻿using MindvizServer.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace MindvizServer.Infrastructure.Data
 {
@@ -79,9 +80,9 @@ namespace MindvizServer.Infrastructure.Data
             modelBuilder.Entity<GroupTask>()
                 .Property(gt => gt.AssignedUserIds)
                 .HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null),
-                    v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions)null)
-                );
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>()
+        );
 
             base.OnModelCreating(modelBuilder);
         }

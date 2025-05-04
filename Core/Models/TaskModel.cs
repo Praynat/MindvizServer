@@ -22,7 +22,7 @@ namespace MindvizServer.Core.Models
         public List<string> ChildrenIds { get; set; } = new List<string>();
 
         public TaskType Type { get; set; } = TaskType.Simple; //Simple or Complex or Category
-
+        public bool IsRoot { get; set; } = false;
         // Statut et Progression
         [Range(0, 100, ErrorMessage = "Progress must be between 0 and 100.")]
         public int Progress { get; set; } = 0;

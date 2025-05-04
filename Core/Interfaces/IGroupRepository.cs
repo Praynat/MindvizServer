@@ -21,6 +21,8 @@ namespace MindvizServer.Core.Interfaces
         Task<bool> UpdateGroupMemberAdminStatusAsync(string groupId, string userId, bool isAdmin);
 
         // Task operations
+          Task<List<TaskModel>> GetTasksByGroupIdAsync(string groupId);
+
         Task<bool> AddTaskToGroupAsync(GroupTask groupTask);
         Task<bool> RemoveTaskFromGroupAsync(string groupId, string taskId);
         Task<bool> AssignTaskToUserAsync(string groupId, string taskId, string userId);

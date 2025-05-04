@@ -222,6 +222,32 @@ namespace MindvizServer.Presentation.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while updating admin status.");
             }
         }
+        // GET all tasks for a specific group
+        [HttpGet("{groupId}/tasks")]
+        public async Task<IActionResult> GetGroupTasks(string groupId)
+        {
+            try
+            {
+                string? userId = HttpContext.User.FindFirst("_id")?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("User ID not found.");
+                }
+
+                var tasks = await _groupService.GetGroupTasksAsync(groupId, userId);
+                if (tasks == null)
+                {
+                    return NotFound("Group not found or you are not a member.");
+                }
+
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetGroupTasks: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while fetching group tasks.");
+            }
+        }
 
         // POST add a task to a group
         [HttpPost("{groupId}/tasks/{taskId}")]

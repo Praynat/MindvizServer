@@ -267,7 +267,11 @@ namespace MindvizServer.Application.Services
                 {
                     return null;
                 }
-
+                if (task.IsRoot)
+                {
+                    Console.WriteLine($"Cannot delete task {id} because it is marked as a root task.");
+                    throw new InvalidOperationException("Root tasks cannot be deleted.");
+                }
                 // Store parent IDs before deleting the task
                 var parentIds = new List<string>(task.ParentIds);
 

@@ -180,6 +180,19 @@ namespace MindvizServer.Application.Services
         }
 
         // Task management
+        public async Task<List<TaskModel>> GetGroupTasksAsync(string groupId, string userId)
+        {
+            var group = await _groupRepository.GetGroupByIdAsync(groupId);
+
+            // Check if user is a member of the group
+            if (group == null || !group.Members.Any(m => m.UserId == userId))
+            {
+                return null; // Not found or not authorized
+            }
+
+            return await _groupRepository.GetTasksByGroupIdAsync(groupId);
+        }
+
         public async Task<bool> AddTaskToGroupAsync(string groupId, string taskId, string userId)
         {
             var group = await _groupRepository.GetGroupByIdAsync(groupId);

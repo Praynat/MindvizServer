@@ -18,7 +18,8 @@ namespace MindvizServer.Core.Database
                     Type = TaskType.Category,
                     Description = "Root category for all tasks",
                     CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    UpdatedAt = DateTime.Now,
+                    IsRoot = true
                 };
 
                 // Main categories

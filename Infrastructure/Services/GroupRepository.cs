@@ -2,6 +2,7 @@
 using MindvizServer.Core.Interfaces;
 using MindvizServer.Core.Models;
 using MindvizServer.Infrastructure.Data;
+using System.Text.Json;
 
 namespace MindvizServer.Infrastructure.Services
 {
@@ -64,7 +65,14 @@ namespace MindvizServer.Infrastructure.Services
 
             if (group == null)
                 return null;
-
+            foreach (var groupTask in group.Tasks)
+            {
+                if (groupTask.Task != null && groupTask.Task.IsRoot)
+                {
+                    Console.WriteLine($"Cannot delete group {id} because it contains root task {groupTask.TaskId}.");
+                    throw new InvalidOperationException("Cannot delete a group that contains root tasks.");
+                }
+            }
             _context.GroupMembers.RemoveRange(group.Members);
             _context.GroupTasks.RemoveRange(group.Tasks);
             _context.Groups.Remove(group);
@@ -134,6 +142,21 @@ namespace MindvizServer.Infrastructure.Services
         }
 
         // Task operations
+        public async Task<List<TaskModel>> GetTasksByGroupIdAsync(string groupId)
+        {
+            // Get all group task associations for this group
+            var groupTasks = await _context.GroupTasks
+                .Where(gt => gt.GroupId == groupId)
+                .Include(gt => gt.Task)
+                .ToListAsync();
+
+            // Extract and return the actual tasks
+            return groupTasks
+                .Select(gt => gt.Task)
+                .Where(t => t != null)
+                .ToList();
+        }
+
         public async Task<bool> AddTaskToGroupAsync(GroupTask groupTask)
         {
             // Check if task is already in group
@@ -155,7 +178,12 @@ namespace MindvizServer.Infrastructure.Services
 
             if (groupTask == null)
                 return false;
-
+            var task = await _context.Tasks.FindAsync(taskId);
+            if (task != null && task.IsRoot)
+            {
+                Console.WriteLine($"Cannot remove task {taskId} from group {groupId} because it is a root task.");
+                throw new InvalidOperationException("Root tasks cannot be removed from groups.");
+            }
             _context.GroupTasks.Remove(groupTask);
             await _context.SaveChangesAsync();
             return true;
@@ -163,44 +191,106 @@ namespace MindvizServer.Infrastructure.Services
 
         public async Task<bool> AssignTaskToUserAsync(string groupId, string taskId, string userId)
         {
-            var groupTask = await _context.GroupTasks
-                .FirstOrDefaultAsync(t => t.GroupId == groupId && t.TaskId == taskId);
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (groupTask == null)
-                return false;
-
-            // Check if user is a member of the group
-            var isMember = await _context.GroupMembers
-                .AnyAsync(m => m.GroupId == groupId && m.UserId == userId);
-
-            if (!isMember)
-                return false;
-
-            if (!groupTask.AssignedUserIds.Contains(userId))
+            try
             {
-                groupTask.AssignedUserIds.Add(userId);
-                await _context.SaveChangesAsync();
-            }
+                // Get the GroupTask
+                var groupTask = await _context.GroupTasks
+                    .FirstOrDefaultAsync(t => t.GroupId == groupId && t.TaskId == taskId);
 
-            return true;
+                if (groupTask == null)
+                {
+                    Console.WriteLine($"[GROUP_ASSIGNMENT] No task found");
+                    return false;
+                }
+
+                // Check if user is a member
+                var isMember = await _context.GroupMembers
+                    .AnyAsync(m => m.GroupId == groupId && m.UserId == userId);
+
+                if (!isMember)
+                {
+                    Console.WriteLine($"[GROUP_ASSIGNMENT] Not a member");
+                    return false;
+                }
+
+                // Initialize if needed
+                if (groupTask.AssignedUserIds == null)
+                {
+                    groupTask.AssignedUserIds = new List<string>();
+                }
+
+                // Add the user if not already assigned
+                if (!groupTask.AssignedUserIds.Contains(userId))
+                {
+                    groupTask.AssignedUserIds.Add(userId);
+
+                    // Save changes
+                    _context.Entry(groupTask).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"[GROUP_ASSIGNMENT] Error: {ex.Message}");
+                return false;
+            }
         }
+
+
 
         public async Task<bool> UnassignTaskFromUserAsync(string groupId, string taskId, string userId)
         {
-            var groupTask = await _context.GroupTasks
-                .FirstOrDefaultAsync(t => t.GroupId == groupId && t.TaskId == taskId);
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (groupTask == null)
-                return false;
-
-            if (groupTask.AssignedUserIds.Contains(userId))
+            try
             {
-                groupTask.AssignedUserIds.Remove(userId);
-                await _context.SaveChangesAsync();
+                // Get the GroupTask
+                var groupTask = await _context.GroupTasks
+                    .FirstOrDefaultAsync(t => t.GroupId == groupId && t.TaskId == taskId);
+
+                if (groupTask == null)
+                {
+                    Console.WriteLine($"[GROUP_UNASSIGN] No task found");
+                    return false;
+                }
+
+                // Initialize if needed
+                if (groupTask.AssignedUserIds == null)
+                {
+                    groupTask.AssignedUserIds = new List<string>();
+                }
+
+                // Remove the user if assigned
+                if (groupTask.AssignedUserIds.Contains(userId))
+                {
+                    groupTask.AssignedUserIds.Remove(userId);
+
+                    // Save changes
+                    _context.Entry(groupTask).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    Console.WriteLine($"[GROUP_UNASSIGN] User {userId} was not assigned to this task");
+                }
+
+                await transaction.CommitAsync();
                 return true;
             }
-
-            return false;
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"[GROUP_UNASSIGN] Error: {ex.Message}");
+                return false;
+            }
         }
+
+
     }
 }
